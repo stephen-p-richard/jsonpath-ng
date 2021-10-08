@@ -33,11 +33,11 @@ OPERATOR_MAP = {
 class Filter(JSONPath):
     """The JSONQuery filter"""
 
-    def __init__(self, expressions):
-        self.expressions = expressions
+    def __init__(self, expression):
+        self.expression = expression
 
     def find(self, datum):
-        if not self.expressions:
+        if not self.expression:
             return datum
 
         datum = DatumInContext.wrap(datum)
@@ -48,32 +48,93 @@ class Filter(JSONPath):
         if not isinstance(datum.value, list):
             return []
 
-        return [DatumInContext(datum.value[i], path=Index(i), context=datum)
-                for i in moves.range(0, len(datum.value))
-                if (len(self.expressions) ==
-                    len(list(filter(lambda x: x.find(datum.value[i]),
-                                    self.expressions))))]
+        result = [DatumInContext(datum.value[i], path=Index(i), context=datum)
+                  for i in moves.range(0, len(datum.value)) if self.expression.find(datum.value[i])]
+
+        return result
 
     def update(self, data, val):
         if type(data) is list:
             for index, item in enumerate(data):
-                shouldUpdate = len(self.expressions) == len(list(filter(lambda x: x.find(item), self.expressions)))
+                shouldUpdate = self.expression.find(item)
                 if shouldUpdate:
                     if hasattr(val, '__call__'):
                         val.__call__(data[index], data, index)
                     else:
                         data[index] = val
         return data
-    
+
     def __repr__(self):
-        return '%s(%r)' % (self.__class__.__name__, self.expressions)
+        return '%s(%r)' % (self.__class__.__name__, self.expression)
 
     def __str__(self):
-        return '[?%s]' % self.expressions
+        return '[?%s]' % self.expression
 
     def __eq__(self, other):
         return (isinstance(other, Filter)
-                and self.expressions == other.expressions)
+                and self.expression == other.expression)
+
+
+class Negation(JSONPath):
+    def __init__(self, expression_to_negate):
+        self.expression_to_negate = expression_to_negate
+
+    def find(self, datum):
+        return not self.expression_to_negate.find(datum)
+
+    def __eq__(self, other):
+        return (isinstance(other, Negation) and
+                self.expression_to_negate == other.expression_to_negate)
+
+    def __repr__(self):
+        return '%s(!%r)' % (self.__class__.__name__, self.expression_to_negate)
+
+    def __str__(self):
+        return '!%s' % (self.expression_to_negate)
+
+
+class Conjunction(JSONPath):
+    def __init__(self, left_conjunct, right_conjunct):
+        self.left = left_conjunct
+        self.right = right_conjunct
+
+    def find(self, datum):
+        return False if not self.left.find(datum) else self.right.find(datum)
+
+    def __eq__(self, other):
+        return (isinstance(other, Conjunction) and
+                ((self.left == other.left and
+                  self.right == other.right) or
+                 (self.left == other.right and
+                  self.right == other.left)))
+
+    def __repr__(self):
+        return '%s(%r && %r)' % (self.__class__.__name__, self.left, self.right)
+
+    def __str__(self):
+        return '(%s && %s)' % (self.left, self.right)
+
+
+class Disjunction(JSONPath):
+    def __init__(self, left_disjunct, right_disjunct):
+        self.left = left_disjunct
+        self.right = right_disjunct
+
+    def find(self, datum):
+        return True if self.left.find(datum) else self.right.find(datum)
+
+    def __eq__(self, other):
+        return (isinstance(other, Disjunction) and
+                ((self.left == other.left and
+                  self.right == other.right) or
+                 (self.left == other.right and
+                  self.right == other.left)))
+
+    def __repr__(self):
+        return '%s(%r || %r)' % (self.__class__.__name__, self.left, self.right)
+
+    def __str__(self):
+        return '(%s || %s)' % (self.left, self.right)
 
 
 class Expression(JSONPath):

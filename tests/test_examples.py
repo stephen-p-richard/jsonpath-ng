@@ -40,12 +40,12 @@ from jsonpath_ng.jsonpath import *
     # Filter all books with ISBN number
     ("$..book[?(@.isbn)]",
      Child(Descendants(Root(), Fields('book')),
-           Filter([Expression(Child(This(), Fields('isbn')), None, None)]))),
+           Filter(Expression(Child(This(), Fields('isbn')), None, None)))),
 
     # Filter all books cheaper than 10
     ("$..book[?(@.price<10)]",
      Child(Descendants(Root(), Fields('book')),
-           Filter([Expression(Child(This(), Fields('price')), '<', 10)]))),
+           Filter(Expression(Child(This(), Fields('price')), '<', 10)))),
 
     # All members of JSON structure
     ("$..*", Descendants(Root(), Fields('*'))),

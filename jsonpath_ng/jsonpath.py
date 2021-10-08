@@ -488,7 +488,8 @@ class Union(JSONPath):
         return False
 
     def find(self, data):
-        return self.left.find(data) + self.right.find(data)
+        seen = []
+        return [x for x in self.left.find(data) + self.right.find(data) if x not in seen and not seen.append(x)]
 
 class Intersect(JSONPath):
     """
@@ -732,8 +733,8 @@ class Slice(JSONPath):
             return '[*]'
         else:
             return '[%s%s%s]' % (self.start or '',
-                                   ':%d'%self.end if self.end else '',
-                                   ':%d'%self.step if self.step else '')
+                                 ':%d'%self.end if self.end else '',
+                                 ':%d'%self.step if self.step else '')
 
     def __repr__(self):
         return '%s(start=%r,end=%r,step=%r)' % (self.__class__.__name__, self.start, self.end, self.step)

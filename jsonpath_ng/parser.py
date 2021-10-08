@@ -72,8 +72,8 @@ class JsonPathParser(object):
         ('left', ','),
         ('left', 'DOUBLEDOT'),
         ('left', '.'),
-        ('left', '|'),
-        ('left', '&'),
+        ('left', 'OR'),
+        ('left', 'AND'),
         ('left', 'WHERE'),
     ]
 
@@ -85,8 +85,8 @@ class JsonPathParser(object):
         """jsonpath : jsonpath '.' jsonpath
                     | jsonpath DOUBLEDOT jsonpath
                     | jsonpath WHERE jsonpath
-                    | jsonpath '|' jsonpath
-                    | jsonpath '&' jsonpath"""
+                    | jsonpath OR jsonpath
+                    | jsonpath AND jsonpath"""
         op = p[2]
 
         if op == '.':
@@ -95,9 +95,9 @@ class JsonPathParser(object):
             p[0] = Descendants(p[1], p[3])
         elif op == 'where':
             p[0] = Where(p[1], p[3])
-        elif op == '|':
+        elif op == '|' or op == '||':
             p[0] = Union(p[1], p[3])
-        elif op == '&':
+        elif op == '&' or op == '&&':
             p[0] = Intersect(p[1], p[3])
 
     def p_jsonpath_fields(self, p):
@@ -143,7 +143,7 @@ class JsonPathParser(object):
         p[0] = Child(p[1], p[3])
 
     def p_jsonpath_parens(self, p):
-        "jsonpath : '(' jsonpath ')'"
+        "jsonpath : LPAREN jsonpath RPAREN"
         p[0] = p[2]
 
     # Because fields in brackets cannot be '*' - that is reserved for array indices

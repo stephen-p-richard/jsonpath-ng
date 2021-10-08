@@ -46,11 +46,11 @@ class JsonPathLexer(object):
     #
     # Anyhow, it is pythonic to give some rope to hang oneself with :-)
 
-    literals = ['*', '.', '[', ']', '(', ')', '$', ',', ':', '|', '&', '~']
+    literals = ['*', '.', '[', ']', '$', ',', ':', '~']
 
     reserved_words = { 'where': 'WHERE' }
 
-    tokens = ['DOUBLEDOT', 'NUMBER', 'ID', 'NAMED_OPERATOR'] + list(reserved_words.values())
+    tokens = ['DOUBLEDOT', 'NUMBER', 'ID', 'NAMED_OPERATOR', 'AND', 'OR', 'LPAREN', 'RPAREN'] + list(reserved_words.values())
 
     states = [ ('singlequote', 'exclusive'),
                ('doublequote', 'exclusive'),
@@ -59,6 +59,12 @@ class JsonPathLexer(object):
     # Normal lexing, rather easy
     t_DOUBLEDOT = r'\.\.'
     t_ignore = ' \t'
+
+    t_LPAREN = r'\('
+    t_RPAREN = r'\)'
+
+    t_AND = r'\&\&?'
+    t_OR = r'\|\|?'
 
     def t_ID(self, t):
         r'[a-zA-Z_@][a-zA-Z0-9_@\-]*'

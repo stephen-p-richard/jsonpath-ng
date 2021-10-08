@@ -26,9 +26,11 @@ class ExtendedJsonPathLexer(lexer.JsonPathLexer):
     literals = lexer.JsonPathLexer.literals + ['?', '@', '+', '*', '/', '-']
     tokens = (['BOOL'] +
               parser.JsonPathLexer.tokens +
-              ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT'])
+              ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT', 'NOT'])
 
     t_FILTER_OP = r'=~|==?|<=|>=|!=|<|>'
+
+    t_NOT = r'\!'
 
     def t_BOOL(self, t):
         r'true|false'
@@ -120,15 +122,22 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
 
     def p_expressions_expression(self, p):
         "expressions : expression"
-        p[0] = [p[1]]
+        p[0] = p[1]
+
+    def p_expressions_not(self, p):
+        "expressions : NOT expressions"
+        p[0]= _filter.Negation(p[2])
 
     def p_expressions_and(self, p):
-        "expressions : expressions '&' expressions"
-        # TODO(sileht): implements '|'
-        p[0] = p[1] + p[3]
+        "expressions : expressions AND expressions"
+        p[0] = _filter.Conjunction(p[1], p[3])
+
+    def p_expressions_or(self, p):
+        "expressions : expressions OR expressions"
+        p[0] = _filter.Disjunction(p[1], p[3])
 
     def p_expressions_parens(self, p):
-        "expressions : '(' expressions ')'"
+        "expressions : LPAREN expressions RPAREN"
         p[0] = p[2]
 
     def p_filter(self, p):
@@ -161,11 +170,11 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
         p[0] = This()
 
     precedence = [
-        ('left', '+', '-'),
-        ('left', '*', '/'),
-    ] + parser.JsonPathParser.precedence + [
-        ('nonassoc', 'ID'),
-    ]
+                     ('left', '+', '-'),
+                     ('left', '*', '/'),
+                 ] + parser.JsonPathParser.precedence + [
+                     ('nonassoc', 'ID'),
+                 ]
 
 
 def parse(path, debug=False):
