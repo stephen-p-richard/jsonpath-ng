@@ -137,6 +137,35 @@ class Disjunction(JSONPath):
         return '(%s || %s)' % (self.left, self.right)
 
 
+class InExpression(JSONPath):
+    def __init__(self, target, values):
+        self.target = target
+        self.values = values
+
+    def find(self, datum):
+        datum = self.target.find(DatumInContext.wrap(datum))
+        if not datum:
+            return []
+        found = []
+        for data in datum:
+            value = data.value
+            if value in self.values:
+                found.append(data)
+        return found
+
+
+    def __repr__(self):
+        return '%s(%r %r)' % (self.__class__.__name__, self.target, self.values)
+
+    def __str__(self):
+        return '%s in %s' % self.target, self.values
+
+    def __eq__(self, other):
+        return (isinstance(other, InExpression)
+                and self.target == other.target
+                and self.values == other.values)
+
+
 class Expression(JSONPath):
     """The JSONQuery expression"""
 

@@ -23,14 +23,18 @@ from . import string as _string
 
 class ExtendedJsonPathLexer(lexer.JsonPathLexer):
     """Custom LALR-lexer for JsonPath"""
+    reserved_words = dict(lexer.JsonPathLexer.reserved_words)
+    reserved_words.update({ 'in': 'IN' })
     literals = lexer.JsonPathLexer.literals + ['?', '@', '+', '*', '/', '-']
     tokens = (['BOOL'] +
               parser.JsonPathLexer.tokens +
-              ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT', 'NOT'])
+              ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT', 'NOT', 'IN'])
 
     t_FILTER_OP = r'=~|==?|<=|>=|!=|<|>'
 
     t_NOT = r'\!'
+
+    t_IN = r' in '
 
     def t_BOOL(self, t):
         r'true|false'
@@ -107,6 +111,24 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
         else:
             super(ExtentedJsonPathParser, self).p_jsonpath_named_operator(p)
 
+    def p_array_options(self, p):
+        """array_options : ID
+                         | NUMBER
+        """
+        p[0] = [p[1]]
+
+    def p_array_options_comma(self, p):
+        "array_options : array_options ',' array_options"
+        p[0] = p[1] + p[3]
+
+    def p_container(self, p):
+        "container : '[' array_options ']'"
+        p[0] = p[2]
+
+    def p_in_expression(self, p):
+        """in_expression : jsonpath IN container"""
+        p[0] = _filter.InExpression(p[1], p[3])
+
     def p_expression(self, p):
         """expression : jsonpath
                       | jsonpath FILTER_OP ID
@@ -121,7 +143,8 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
         p[0] = _filter.Expression(left, op, right)
 
     def p_expressions_expression(self, p):
-        "expressions : expression"
+        """expressions : expression
+                       | in_expression"""
         p[0] = p[1]
 
     def p_expressions_not(self, p):
@@ -173,6 +196,7 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
                      ('left', '+', '-'),
                      ('left', '*', '/'),
                  ] + parser.JsonPathParser.precedence + [
+                     ('right', 'NOT'),
                      ('nonassoc', 'ID'),
                  ]
 
