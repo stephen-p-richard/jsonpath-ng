@@ -66,7 +66,9 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
 
     def p_jsonpath_operator_jsonpath(self, p):
         """jsonpath : NUMBER operator NUMBER
+                    | NUMBER operator FLOAT
                     | FLOAT operator FLOAT
+                    | FLOAT operator NUMBER
                     | ID operator ID
                     | NUMBER operator jsonpath
                     | FLOAT operator jsonpath
@@ -110,6 +112,7 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
     def p_expression(self, p):
         """expression : jsonpath
                       | jsonpath FILTER_OP ID
+                      | jsonpath FILTER_OP jsonpath
                       | jsonpath FILTER_OP FLOAT
                       | jsonpath FILTER_OP NUMBER
                       | jsonpath FILTER_OP BOOL
@@ -170,9 +173,11 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
         p[0] = This()
 
     precedence = [
+                     ('left', 'FILTER_OP'),
                      ('left', '+', '-'),
                      ('left', '*', '/'),
                  ] + parser.JsonPathParser.precedence + [
+                     ('right', 'NOT'),
                      ('nonassoc', 'ID'),
                  ]
 

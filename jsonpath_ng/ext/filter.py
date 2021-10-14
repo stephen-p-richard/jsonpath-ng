@@ -146,28 +146,34 @@ class Expression(JSONPath):
         self.value = value
 
     def find(self, datum):
-        datum = self.target.find(DatumInContext.wrap(datum))
+        targetDatum = self.target.find(DatumInContext.wrap(datum))
 
-        if not datum:
+        if not targetDatum:
             return []
         if self.op is None:
-            return datum
+            return targetDatum
 
         found = []
-        for data in datum:
+        comparedValue = self.value
+        for data in targetDatum:
             value = data.value
-            if isinstance(self.value, int):
+            if isinstance(comparedValue, JSONPath):
+                comparedValueDatum = comparedValue.find(DatumInContext.wrap(datum))
+                if not comparedValueDatum:
+                    return []
+                comparedValue = comparedValueDatum[0].value
+            elif isinstance(comparedValue, int):
                 try:
                     value = int(value)
                 except ValueError:
                     continue
-            elif isinstance(self.value, bool):
+            elif isinstance(comparedValue, bool):
                 try:
                     value = bool(value)
                 except ValueError:
                     continue
 
-            if OPERATOR_MAP[self.op](value, self.value):
+            if OPERATOR_MAP[self.op](value, comparedValue):
                 found.append(data)
 
         return found
