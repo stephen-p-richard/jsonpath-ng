@@ -68,14 +68,16 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
         lexer_class = lexer_class or ExtendedJsonPathLexer
         super(ExtentedJsonPathParser, self).__init__(debug, lexer_class)
 
+    def p_numeric(self, p):
+        """numeric : NUMBER
+                   | FLOAT"""
+        p[0] = p[1]
+
     def p_jsonpath_operator_jsonpath(self, p):
-        """jsonpath : NUMBER operator NUMBER
-                    | FLOAT operator FLOAT
-                    | ID operator ID
-                    | NUMBER operator jsonpath
-                    | FLOAT operator jsonpath
-                    | jsonpath operator NUMBER
-                    | jsonpath operator FLOAT
+        """jsonpath : ID operator ID
+                    | numeric operator numeric
+                    | numeric operator jsonpath
+                    | jsonpath operator numeric
                     | jsonpath operator jsonpath
         """
 
@@ -113,8 +115,7 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
 
     def p_array_options(self, p):
         """array_options : ID
-                         | NUMBER
-                         | FLOAT
+                         | numeric
         """
         p[0] = [p[1]]
 
@@ -133,8 +134,7 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
     def p_expression(self, p):
         """expression : jsonpath
                       | jsonpath FILTER_OP ID
-                      | jsonpath FILTER_OP FLOAT
-                      | jsonpath FILTER_OP NUMBER
+                      | jsonpath FILTER_OP numeric
                       | jsonpath FILTER_OP BOOL
         """
         if len(p) == 2:
