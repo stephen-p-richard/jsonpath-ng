@@ -114,6 +114,7 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
     def p_array_options(self, p):
         """array_options : ID
                          | NUMBER
+                         | FLOAT
         """
         p[0] = [p[1]]
 
